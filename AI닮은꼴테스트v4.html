@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>AI 닮은꼴 테스트</title>
+<style>
+  :root{ --ink:#0f172a; --muted:#64748b; --line:#D0DFE6; --brand:#6E8C9E; --brand2:#92BAD3; }
+  *{ box-sizing:border-box; }
+  html, body { overflow-x:hidden; }
+  body{
+    margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Pretendard,Malgun Gothic,sans-serif;
+    color:var(--ink); background:linear-gradient(#DFEBEB,#E8E8E8); -webkit-text-size-adjust:100%; text-size-adjust:100%;
+  }
+  .container{ max-width:880px; margin:0 auto; padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
+  @media(min-width:768px){ .container{ padding: calc(32px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); } }
+
+  /* 기본 카드 */
+  .card{ background:#fff; border:1px solid var(--line); border-radius:16px; box-shadow:0 1px 8px rgba(0,0,0,.03); overflow:hidden; }
+
+  .p24{ padding:16px; } .p32{ padding:20px; } @media(min-width:768px){ .p24{ padding:24px; } .p32{ padding:32px; } }
+  .row{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; } @media(min-width:768px){ .row{ gap:12px; flex-wrap:nowrap; } }
+  .btn{ display:inline-flex; align-items:center; gap:8px; padding:12px 16px; border-radius:10px; border:1px solid var(--line); background:#fff; color:#111; cursor:pointer; font-size:14px; min-height:44px; text-align:center; white-space:nowrap; flex-shrink:0; }
+  @media(min-width:768px){ .btn{ padding:10px 14px; } }
+  .btn.primary{ background:#6E8C9E; color:#fff; border-color:#6E8C9E; }
+  .btn:disabled{ opacity:.5; cursor:not-allowed; }
+  .input{ width:100%; padding:12px; border:1px solid var(--line); border-radius:10px; font-size:16px; min-height:44px; }
+  @media(min-width:768px){ .input{ padding:10px 12px; font-size:14px; } }
+  .progress{ height:8px; background:#e5eef2; border-radius:999px; overflow:hidden; }
+  .progress>div{ height:100%; background:linear-gradient(90deg,#92BAD3,#A7CCD2); }
+  .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; background:#6E8C9E; color:#fff; border:1px solid #6E8C9E; font-size:12px; flex-shrink:0; }
+
+  .grid{ display:grid; gap:12px; }
+  .grid2{ grid-template-columns:1fr; } @media(min-width:768px){ .grid2{ grid-template-columns:repeat(2,1fr); } }
+  #options{ grid-template-columns:1fr; } @media (min-width:640px){ #options{ grid-template-columns:repeat(2,1fr); } }
+
+  .spin{ width:48px; height:48px; border:4px solid #D0DFE6; border-top-color:#6E8C9E; border-radius:999px; animation:spin 1s linear infinite; margin:0 auto; }
+  @keyframes spin{ to{ transform:rotate(360deg); } }
+
+  .opt{ padding:16px; border:1px solid var(--line); border-radius:14px; cursor:pointer; background:#fff; min-height:60px; display:flex; align-items:center; }
+  @media(min-width:768px){ .opt{ padding:14px; } }
+  .opt.active{ border-color:#92BAD3; outline:2px solid #92BAD3; background:#DFEBEB; }
+
+  .muted{ color:#64748b; } .center{ text-align:center; }
+
+  h1{ margin:0; font-size:24px; font-weight:800; letter-spacing:-.02em; line-height:1.2; } @media(min-width:768px){ h1{ font-size:28px; } }
+  h2{ margin:0 0 10px; font-size:16px; font-weight:700; line-height:1.3; } @media(min-width:768px){ h2{ font-size:18px; } }
+  h3{ margin:12px 0 0; font-size:18px; font-weight:800; line-height:1.2; } @media(min-width:768px){ h3{ font-size:20px; } }
+
+  .btn-group{ display:flex; gap:8px; flex-wrap:wrap; justify-content:space-between; align-items:center; }
+  @media(max-width:480px){ .btn-group{ flex-direction:column; width:100%; } .btn-group .btn{ width:100%; justify-content:center; } .btn{ white-space:normal; } }
+
+  .opt-content{ display:flex; justify-content:space-between; align-items:center; width:100%; gap:12px; }
+  .opt-text{ flex:1; min-width:0; text-align:left; line-height:1.4; word-break:keep-all; overflow-wrap:break-word; }
+
+  footer{ margin-top:20px; font-size:12px; } @media(min-width:768px){ footer{ margin-top:28px; } }
+
+  .score-label{ display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; gap:8px; }
+  .score-name{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .score-value{ flex-shrink:0; font-weight:600; }
+
+  .sr-only{ position:absolute!important; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+
+  .toast{ position:fixed; left:50%; bottom:20px; transform:translateX(-50%) translateY(20px); background:#0f172a; color:#fff; padding:10px 14px; border-radius:10px; font-size:14px; box-shadow:0 4px 16px rgba(0,0,0,.2); opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease; z-index:9999; max-width:90vw; text-align:center; }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* 질문(문항 제목) 폰트 */
+  #qlegend { font-size:32px !important; font-weight:800 !important; line-height:1.5 !important; }
+  @media (min-width:768px){ #qlegend{ font-size:36px !important; } }
+
+  /* 선택지 Hover/터치 오버 */
+  .opt{
+    transition: background .15s ease, color .15s ease, border-color .15s ease, outline-color .15s ease;
+  }
+  .opt:hover, .opt:focus, .opt:focus-within, .opt.hovering{
+    background:#6E8C9E !important; border-color:#6E8C9E !important; color:#fff !important;
+  }
+  .opt:hover .opt-text, .opt:focus .opt-text, .opt:focus-within .opt-text, .opt.hovering .opt-text{ color:#fff !important; }
+
+  /* =========================
+     잘 맞는/안 맞는 AI: 3열 고정 (아이콘-막대-아이콘)
+     ========================= */
+  .compat{
+    display:grid !important;
+    grid-template-columns: max-content minmax(24px,1fr) max-content !important; /* 가운데 바 최소 24px */
+    column-gap:0 !important;      /* z-index 겹침 방지: 간격은 meter margin으로 처리 */
+    row-gap:12px;
+    align-items:center;
+  }
+  .compat .item{ display:flex; align-items:center; min-width:0; overflow:visible; position:relative; }
+  .compat .item.left{  justify-content:flex-start; text-align:left;  z-index:2; } /* 아이콘 우선 */
+  .compat .item.mid{   justify-content:center;                    z-index:1; }   /* 막대는 아래 */
+  .compat .item.right{ justify-content:flex-end;   text-align:right; z-index:2; }
+
+  /* 캐릭터 블록: 위(tag) - 가운데(img) - 아래(name) 고정 */
+  .compat .slot{
+    display:grid;
+    grid-template-rows: auto auto auto;
+    align-items:center;
+    justify-items:center;
+    gap:6px;
+    max-width:100%;
+    min-width:0;
+  }
+  .compat .tag{
+    grid-row:1;
+    font-size:12px; line-height:1; color:var(--muted,#64748b);
+  }
+  .compat .img{
+    grid-row:2;
+    width: clamp(56px, 22vw, 120px);
+    height: clamp(56px, 22vw, 120px);
+    display:flex; align-items:center; justify-content:center;
+    flex:0 0 auto;
+  }
+  .compat .img img{
+    width:100%; height:100%; object-fit:contain; image-rendering:auto; border-radius:10px;
+  }
+  .compat .name{
+    grid-row:3;
+    display:block; max-width:160px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-weight:600; color:var(--ink,#0f172a); min-width:0;
+  }
+  @media (max-width: 480px){
+    .compat .name{ max-width:180px; }
+    .compat .img{ width:clamp(48px,22vw,96px); height:clamp(48px,22vw,96px); }
+  }
+
+  /* 제로섬 막대(굵기 업) + 아이콘과 3px 간격 보장 */
+  .compat-meter{ width:100%; min-width:0; margin:0 3px !important; } /* 아이콘 ↔ 막대 3px */
+  .meter{
+    position:relative;
+    display:flex;
+    height:36px;                      /* 더 굵게 */
+    border-radius:12px;
+    overflow:hidden;
+    background:#e5eef2;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.04);
+    max-width:100%;
+  }
+  @media (min-width:768px){
+    .meter{ height:40px; }            /* 데스크톱에서 조금 더 굵게 */
+  }
+  /* 방향: 좌=잘 맞음(파랑), 우=안 맞음(빨강) */
+  .meter .left{  height:100%; background:#3b82f6; }
+  .meter .right{ height:100%; background:#ef4444; }
+  .meter-label{
+    position:absolute; top:50%; transform:translateY(-50%);
+    font-size:12px; font-weight:800; color:#fff; letter-spacing:.02em;
+    text-shadow:0 1px 2px rgba(0,0,0,.35); pointer-events:none;
+  }
+  .meter-label.left{ left:8px; }
+  .meter-label.right{ right:8px; }
+
+  /* 모바일에서도 3열 유지 */
+  @media (max-width: 420px){
+    .compat{
+      grid-template-columns: max-content minmax(24px,1fr) max-content !important;
+      row-gap:10px;
+    }
+  }
+
+  /* ========== 공유 아이콘: 1열 고정 + 간격 최적화 ========== */
+  .share-item{
+    width: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn-circle{
+    width: 46px; height: 46px; border-radius: 999px;
+    border:1px solid var(--line,#D0DFE6); background:#fff; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; line-height:1; user-select:none;
+    transition:transform .08s ease, box-shadow .12s ease, background .15s ease, border-color .15s ease;
+  }
+  .btn-circle:hover{ box-shadow:0 4px 14px rgba(0,0,0,.08); background:#f8fafb; border-color:#c9d6dd; }
+  .btn-circle:active{ transform:scale(.96); }
+  .btn-circle:focus-visible{ outline:2px solid #92BAD3; outline-offset:2px; }
+  .share-label{
+    max-width:60px; font-size:11px; line-height:1.2;
+    color:var(--muted,#64748b); text-align:center;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .share-circles{
+    display:grid !important;
+    grid-auto-flow:column;               /* 가로 한 줄 고정 */
+    grid-auto-columns:minmax(52px,1fr);  /* 작은 화면 대응 */
+    grid-template-rows:1fr;              /* 단일 행 */
+    gap:10px;
+    justify-items:center;
+    align-items:start;
+    width:100%;
+    overflow-x:auto;                     /* 극소 화면에서만 스크롤 */
+    -webkit-overflow-scrolling:touch;
+    padding-bottom:2px;
+  }
+  @media (max-width:360px){
+    .share-circles{ gap:8px; grid-auto-columns:minmax(50px,1fr); }
+    .share-item{ width:56px; }
+    .btn-circle{ width:42px; height:42px; font-size:17px; }
+    .share-label{ max-width:56px; font-size:10.5px; }
+  }
+
+  /* 감속 설정 사용자(접근성) */
+  @media (prefers-reduced-motion: reduce){
+    .opt, .btn-circle{ transition:none; }
+  }
+</style>
+</head>
+
+<body>
+  <main class="container">
+    <header style="margin-bottom:16px">
+      <h1>AI 닮은꼴 테스트</h1>
+      <p class="muted" style="margin:6px 0 0">AI 툴에도 MBTI가 있다면? 당신은 어떤 AI 타입일까?</p>
+    </header>
+
+    <div id="live-polite" class="sr-only" aria-live="polite"></div>
+    <div id="live-assertive" class="sr-only" aria-live="assertive"></div>
+
+    <section id="app"></section>
+
+    <footer class="center muted">© <span id="year"></span> AI 성격 테스트</footer>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+  /* ========= 0) 설정 ========= */
+  document.getElementById('year').textContent = new Date().getFullYear();
+  function toast(msg, ms){ ms = ms || 1600; var el=document.getElementById('toast'); if(!el) return; el.textContent=String(msg||''); el.classList.add('show'); setTimeout(function(){ el.classList.remove('show'); }, ms); }
+  window.alert = function(m){ toast(m); };
+
+  var SHEET_ID = '1a57unFT6Bfr7V_4q6nAPFssqmKN4mWAdrJRd0ZaU7mE';
+  var TABS = { META:'AI_META', Q:'QUESTIONS' };
+  var TIMEOUT_MS = 9000;
+  var MAX_OPTIONS = 12, MIN_AGE=7, MAX_AGE=120;
+
+  (function(){
+    var p=new URLSearchParams(location.search);
+    if(p.get('sheet')) SHEET_ID=p.get('sheet');
+    if(p.get('metatab')) TABS.META=p.get('metatab');
+    if(p.get('qtab')) TABS.Q=p.get('qtab');
+  })();
+
+  /* ========= 1) 전역 상태 ========= */
+  var AI_META = {}, BRAND_COLORS = {}, QR = [];
+  var state = { booting:true, submitting:false, error:'', started:false, name:'', age:null, step:0, answers:[], showResult:false };
+
+  /* ========= 2) 유틸 ========= */
+  function $(sel){ return document.querySelector(sel); }
+  function h(html){ var t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstElementChild; }
+  function mount(el){ var r=$('#app'); r.innerHTML=''; r.appendChild(el); }
+  function normalizeHeader(s){ s = (s==null?'':String(s)); return s.trim().toLowerCase().replace(/\s+/g,''); }
+  function clamp(i,t){ i = Number.isFinite(i)?i:0; return Math.min(Math.max(i,0), Math.max(t-1,0)); }
+  function canSubmit(a){ return a.every(function(x){ return x!==null; }); }
+  function firstNull(a){ for(var i=0;i<a.length;i++){ if(a[i]===null) return i; } return -1; }
+  function progress(v){ var pct=Math.max(0,Math.min(100,Math.round(v))); return h('<div class="progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+pct+'"><div style="width:'+pct+'%"></div></div>'); }
+  function rgba(hex,a){ hex=(hex||'#D0DFE6').replace('#',''); var r=parseInt(hex.slice(0,2),16)||208,g=parseInt(hex.slice(2,4),16)||223,b=parseInt(hex.slice(4,6),16)||230; return 'rgba('+r+','+g+','+b+','+a+')'; }
+  function esc(s){ s = (s==null?'':String(s)); return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
+  function safeColor(c){ return /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(c||'') ? c : '#D0DFE6'; }
+
+  /* === 이미지 폴백 체인 로더 === */
+  function getDriveId(u){
+    u = String(u||'').trim();
+    var m = u.match(/\/d\/([a-zA-Z0-9_-]{10,})/); if (m) return m[1];
+    m = u.match(/[?&]id=([a-zA-Z0-9_-]{10,})/);    if (m) return m[1];
+    return '';
+  }
+  function driveSrcCandidates(raw){
+    raw = String(raw||'').trim().replace(/^http:\/\//,'https://');
+    var id = getDriveId(raw) || raw;
+    var t  = Date.now();
+    var cand = [];
+    if (id) {
+      cand.push('https://drive.google.com/uc?export=view&id='+id+'&t='+t);
+      cand.push('https://drive.google.com/thumbnail?id='+id+'&sz=w1024&t='+t);
+      cand.push('https://drive.google.com/uc?export=download&id='+id+'&t='+t);
+    } else if (raw) {
+      cand.push(raw + (raw.indexOf('?')>-1?'&':'?') + 't='+t);
+    }
+    return cand;
+  }
+  function setImgWithFallback(imgEl, raw, placeholderSVG){
+    var list = driveSrcCandidates(raw);
+    var i = 0;
+
+    imgEl.decoding = 'async';
+    imgEl.loading = 'lazy';
+    imgEl.referrerPolicy = 'no-referrer';
+
+    function setPlaceholder(){
+      var svg = placeholderSVG || (
+        '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="96">'
+        +'<rect width="100%" height="100%" fill="#eef2f5"/>'
+        +'<text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="12" fill="#94a3b8">이미지를 불러오지 못했어요</text>'
+        +'</svg>'
+      );
+      imgEl.onerror = null;
+      imgEl.src = 'data:image/svg+xml;charset=utf-8,'+ encodeURIComponent(svg);
+    }
+
+    function tryNext(){
+      if (!list.length){ setPlaceholder(); return; }
+      if (i >= list.length) { setPlaceholder(); return; }
+      var src = list[i++];
+      imgEl.onerror = function(){ tryNext(); };
+      imgEl.onload  = function(){ imgEl.onerror = null; };
+      imgEl.src = src;
+    }
+    tryNext();
+  }
+
+  /* 모노그램 SVG */
+  function monogramSVG(letter, tone){
+    letter = String(letter||'?').trim().charAt(0) || '?';
+    var bg = '#eef2f5', fg = '#64748b';
+    if (tone === 'blue'){ bg = '#dbeafe'; fg = '#1e40af'; }
+    else if (tone === 'red'){ bg = '#fee2e2'; fg = '#991b1b'; }
+    return (
+      '<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128">'
+      +'<rect rx="16" ry="16" width="100%" height="100%" fill="'+bg+'"/>'
+      +'<text x="50%" y="54%" dominant-baseline="middle" text-anchor="middle" font-family="ui-sans-serif,system-ui,Segoe UI,Roboto" font-size="64" font-weight="800" fill="'+fg+'">'+ letter +'</text>'
+      +'</svg>'
+    );
+  }
+
+  /* ========= 3) 시트 로딩 ========= */
+  function extractResponseJSON(txt){
+    var m = txt && txt.match(/google\.visualization\.\s*Query\s*\.setResponse\(([\s\S]*?)\)\s*;?\s*$/);
+    if(!m){ var head=(txt||'').slice(0,120).replace(/\s+/g,' ').trim(); throw new Error('응답 포맷 오류(setResponse 미검출). 미리보기: '+(head||'N/A')); }
+    try{ return JSON.parse(m[1]); }catch(e){ throw new Error('응답 JSON 파싱 실패: '+(e&&e.message?e.message:e)); }
+  }
+  async function fetchSheetTab(sheetName){
+    var url = 'https://docs.google.com/spreadsheets/d/'+SHEET_ID+'/gviz/tq?sheet='+encodeURIComponent(sheetName)+'&tqx=out:json&rand='+Date.now();
+    var ctrl=new AbortController(); var to=setTimeout(function(){ ctrl.abort(); }, TIMEOUT_MS);
+    var txt = '';
+    try{ var res=await fetch(url,{signal:ctrl.signal}); txt=await res.text(); if(!res.ok) throw new Error('HTTP '+res.status+' '+res.statusText); }
+    finally{ clearTimeout(to); }
+    var json=extractResponseJSON(txt);
+    var cols=(json.table && json.table.cols || []).map(function(c){ return (c.label||c.id||'').toString(); });
+    var rows=(json.table && json.table.rows || []).map(function(r){
+      var o={}; (r.c||[]).forEach(function(cell,i){ o[cols[i]||('col'+i)] = cell ? (cell.v==null?'':cell.v) : ''; }); return o;
+    });
+    return rows;
+  }
+
+  /* ========= 4) 파서 ========= */
+  function parseMetaRows(rows){
+    var meta={}, colors={};
+    rows.forEach(function(_r){
+      var r={}; Object.keys(_r).forEach(function(k){ r[normalizeHeader(k)] = _r[k]; });
+      var key=(r.key||'').toString().trim(); if(!key) return;
+      var imgRaw = r.img || r.image || r.imageurl || r.imgurl || r.logo || r.icon || r.photo || r.picture || r.url || '';
+      meta[key] = {
+        key:key, koName:r.koname||key, persona:r.persona||'',
+        img:String(imgRaw||'').trim(),
+        desc:r.desc||'',
+        strengths:String(r.strengths||'').split(/;|\n|,\s?/).filter(Boolean),
+        fits:String(r.fits||'').split(/;|\n|,\s?/).filter(Boolean),
+        shortCode:r.shortcode||r.code||''
+      };
+      if(r.color) colors[key]=safeColor(String(r.color).trim());
+    });
+    return {meta:meta, colors:colors};
+  }
+  function buildAliases(meta){
+    var byKey={}, byKo={}, byShort={};
+    Object.keys(meta).forEach(function(k){
+      var m = meta[k]; if(!m||!m.key) return;
+      var key=String(m.key).trim(); var keyL=key.toLowerCase();
+      byKey[key]=key; byKey[keyL]=key;
+      if(m.koName) byKo[m.koName.replace(/\s+/g,'').toLowerCase()]=key;
+      if(m.shortCode) byShort[String(m.shortCode).trim().toLowerCase()]=key;
+    });
+    return {byKey:byKey, byKo:byKo, byShort:byShort};
+  }
+  function resolveAIKey(val, aliases){
+    if(!val) return null; var raw=String(val).trim(), k=raw.replace(/\s+/g,'').toLowerCase();
+    if(aliases.byKey[raw]) return aliases.byKey[raw];
+    if(aliases.byKey[k]) return aliases.byKey[k];
+    if(aliases.byShort[k]) return aliases.byShort[k];
+    if(aliases.byKo[k]) return aliases.byKo[k];
+    return null;
+  }
+  function parseQuestionRows(rows, aliases){
+    var out=[];
+    rows.forEach(function(_r){
+      var r={}; Object.keys(_r).forEach(function(k){ r[normalizeHeader(k)]=_r[k]; });
+      var title=r.question||r.title||''; if(!String(title).trim()) return;
+      var obj={ title:String(title).trim(), options:[] };
+      for(var i=1;i<=MAX_OPTIONS;i++){
+        var label=r['opt'+i+'_text']||r['opt'+i+'_label']||'';
+        var aiRaw=r['opt'+i+'_ai']||''; var codeRaw=r['opt'+i+'_code']||'';
+        if(!String(label).trim()) continue;
+        var ai = resolveAIKey(aiRaw, aliases) || resolveAIKey(codeRaw, aliases);
+        if(!ai){ console.warn('[Parsing Warning] "'+obj.title+'" '+i+'번 선택지의 AI 키를 찾지 못해 제외'); continue; }
+        obj.options.push({label:String(label).trim(), ai:ai});
+      }
+      if(obj.options.length>=2) out.push(obj);
+    });
+    return out.map(function(q){ return [q.title, q.options.map(function(p){ return [p.label, p.ai]; })]; });
+  }
+
+  /* ========= 5) UI 조각 ========= */
+  function Spinner(msg){ return h('<section class="card p24 center"><div class="spin"></div><p style="margin:10px 0 0">'+esc(msg||'불러오는 중…')+'</p></section>'); }
+  function LoadingScreen(){ return h('<section class="card p24 center"><div class="spin"></div><p style="margin:10px 0 0">결과 생성 중…</p></section>'); }
+  function ErrorCard(msg){ return h('<section class="card p24 center"><p style="color:#b91c1c;font-weight:600)">'+esc(msg||'문항을 불러오지 못했습니다.')+'</p><div style="margin-top:12px" class="row"><button class="btn" onclick="location.reload()">새로고침</button><button class="btn primary" onclick="boot(true)">다시 불러오기</button></div></section>'); }
+
+  /* Brand 이미지 */
+  function BrandImg(key,size,tone){
+    var m=AI_META[key]||{koName:key,img:''};
+    var col=safeColor(BRAND_COLORS[key]||'#D0DFE6');
+    var box=h('<div style="display:inline-flex;border-radius:14px;padding:6px;background:linear-gradient(135deg,'+rgba(col,0.16)+','+rgba(col,0.08)+',transparent);box-shadow:inset 0 0 0 1px '+rgba(col,0.18)+'"></div>');
+    var img=document.createElement('img');
+    img.alt=m.koName||key;
+    img.style.width=size+'px'; img.style.height=size+'px'; img.style.objectFit='contain'; img.style.borderRadius='10px';
+
+    var letter = (m.koName||key||'?').toString().trim().charAt(0) || '?';
+    var ph = monogramSVG(letter, tone);
+
+    setImgWithFallback(img, m.img, ph);
+    box.appendChild(img);
+    return box;
+  }
+
+  function ResultCard(key){
+    var m=AI_META[key]||{koName:key, persona:'', desc:'', strengths:[], fits:[]};
+    var el=h('<div class="card p24"><div class="center"><div id="img"></div><h3 style="margin:12px 0 0;font-size:20px;font-weight:800">'+esc(m.koName||key)+(m.persona?(' <span class="muted" style="font-weight:600">— '+esc(m.persona)+'</span>'):'')+'</h3><p class="muted" style="margin:8px auto 0;max-width:640px">'+esc(m.desc||'')+'</p></div><div class="grid grid2" style="margin-top:14px"><div><strong>강점</strong><ul style="margin:8px 0 0;padding-left:18px">'+(m.strengths||[]).map(function(s){return '<li>'+esc(s)+'</li>';}).join('')+'</ul></div><div><strong>어울리는 사람/환경</strong><ul style="margin:8px 0 0;padding-left:18px">'+(m.fits||[]).map(function(s){return '<li>'+esc(s)+'</li>';}).join('')+'</ul></div></div></div>');
+    el.querySelector('#img').appendChild(BrandImg(key,154));
+    return el;
+  }
+
+  /* 공유 아이콘 (1열 고정) */
+  function ShareRow(shareText){
+    var url = location.href.split('#')[0];
+
+    function tryNativeShare(text){
+      if (navigator.share){
+        navigator.share({ title:'AI 닮은꼴 테스트', text:text, url:url }).catch(function(){});
+        return true;
+      }
+      return false;
+    }
+    function copyLink(){
+      if (navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(url).then(function(){ toast('링크를 복사했어요'); });
+      } else {
+        var ta=document.createElement('textarea'); ta.value=url; document.body.appendChild(ta); ta.select();
+        try{ document.execCommand('copy'); toast('링크를 복사했어요'); } finally{ document.body.removeChild(ta); }
+      }
+    }
+
+    function makeItem(icon, label, onTap){
+      var item = h('<div class="share-item"></div>');
+      var btn  = h('<button class="btn-circle" type="button" aria-label="'+esc(label)+'" title="'+esc(label)+'">'+icon+'</button>');
+      var cap  = h('<div class="share-label">'+esc(label)+'</div>');
+      btn.onclick = onTap;
+      item.appendChild(btn); item.appendChild(cap);
+      return item;
+    }
+
+    var wrap = h('<div class="share-circles" role="group" aria-label="공유하기"></div>');
+
+    wrap.appendChild(makeItem('🔗', '링크', copyLink));
+    wrap.appendChild(makeItem('𝕏', 'X', function(){
+      var tw='https://twitter.com/intent/tweet?text='+encodeURIComponent(shareText)+'&url='+encodeURIComponent(url);
+      window.open(tw, '_blank');
+    }));
+    wrap.appendChild(makeItem('📸', '인스타', function(){
+      if(!tryNativeShare(shareText)){ toast('이 기기에서는 인스타 공유가 제한돼요. 링크를 복사했어요.'); copyLink(); }
+    }));
+    wrap.appendChild(makeItem('💬', '카카오톡', function(){
+      if(!tryNativeShare(shareText)){ toast('웹 공유가 안 되는 환경이에요. 링크를 복사했어요.'); copyLink(); }
+    }));
+    wrap.appendChild(makeItem('✉️', 'SMS', function(e){
+      e.preventDefault();
+      var body = encodeURIComponent(shareText+' '+url);
+      var smsUrl = (navigator.userAgent.match(/iPhone|iPad|iPod/)? 'sms:&body=' : 'sms:?body=') + body;
+      location.href = smsUrl;
+    }));
+
+    return wrap;
+  }
+
+  /* ========= 6) 화면 ========= */
+  function StartScreen(){
+    var el=h('<section class="card p24" aria-labelledby="start-form-title">'
+      +'<h2 id="start-form-title" class="sr-only">테스트 시작 정보 입력</h2>'
+      +'<div class="grid grid2">'
+      +'<label for="name">이름<br><input id="name" class="input" placeholder="홍길동" autocomplete="name" value=""></label>'
+      +'<label for="age">나이<br><input id="age" class="input" type="number" inputmode="numeric" min="'+MIN_AGE+'" max="'+MAX_AGE+'" placeholder="25" value=""></label>'
+      +'</div>'
+      +'<p id="err" style="margin:8px 0 0; display:none; color:#b91c1c; font-weight:600" role="alert"></p>'
+      +'<div style="margin-top:12px"><button id="start" class="btn primary" type="button" disabled aria-disabled="true" aria-describedby="start-hint">시작하기</button>'
+      +'<p id="start-hint" class="muted" style="margin:8px 0 0">'+(QR.length?'이름과 나이를 입력하면 시작할 수 있어요.':'문항을 불러오는 중입니다…')+'</p></div>'
+      +'</section>');
+
+    var $name=el.querySelector('#name'), $age=el.querySelector('#age'), $start=el.querySelector('#start'), $polite=$('#live-polite');
+
+    function validAge(v){ var n=parseInt(v,10); return Number.isFinite(n)&&n>=MIN_AGE&&n<=MAX_AGE; }
+    function updateStartDisabled(){
+      var ready = !state.booting && QR.length>0;
+      var nameOk = $name.value.trim().length>0;
+      var ageOk  = validAge($age.value);
+      var ok = ready && nameOk && ageOk;
+      $start.disabled = !ok; $start.setAttribute('aria-disabled', String(!ok));
+      if($polite){ if(!ready) $polite.textContent='문항을 불러오는 중입니다. 잠시만 기다려 주세요.'; else if(!nameOk||!ageOk) $polite.textContent='이름과 나이를 입력하면 시작할 수 있습니다.'; else $polite.textContent='시작 버튼을 눌러 진행하세요.'; }
+    }
+    $name.addEventListener('input', updateStartDisabled);
+    $age .addEventListener('input', updateStartDisabled);
+
+    $start.addEventListener('click', function(){
+      if($start.disabled) return;
+      state.name=$name.value.trim(); state.age=parseInt($age.value,10);
+      state.started=true; state.step=0; state.answers = Array(QR.length).fill(null);
+      render();
+    });
+
+    updateStartDisabled();
+    return el;
+  }
+
+  function buildQ(){ return QR.map(function(_q, i){ return { id:i+1, title:_q[0], options:_q[1].map(function(p){ return {label:p[0], key:p[1]}; }) }; }); }
+
+  function QuizScreen(){
+    var Q = buildQ(), total=Q.length;
+    if(!state.answers.length) state.answers=Array(total).fill(null);
+    state.step=clamp(state.step,total);
+    var cur=Q[state.step], progressPct=Math.round(((state.step+1)/total)*100), picked=state.answers[state.step];
+
+    var wrap=h('<div class="grid" style="gap:16px"></div>');
+    wrap.appendChild(progress(progressPct));
+
+    var card=h('<section class="card p24">'
+      +'<div class="row" style="justify-content:space-between;margin-bottom:8px"><span class="pill">Q'+cur.id+' / '+Q.length+'</span><span class="muted">'+progressPct+'%</span></div>'
+      +'<fieldset id="qset" style="border:0;padding:0;margin:0"><legend id="qlegend" style="margin:0 0 10px;font-size:18px;font-weight:700">'+esc(cur.title)+'</legend>'
+      +'<div class="grid" id="options" role="radiogroup" aria-labelledby="qlegend"></div></fieldset>'
+      +'<div class="row" style="justify-content:space-between;margin-top:12px"><button class="btn" id="prev" '+(state.step===0?'disabled aria-disabled="true"':'')+'>이전</button>'
+      +'<div class="row">'+(state.step<Q.length-1?('<button class="btn" id="next" '+(picked===null?'disabled aria-disabled="true"':'')+'>다음</button>'):('<button class="btn primary" id="submit" '+(state.answers.some(function(a){return a===null;})?'disabled aria-disabled="true"':'')+'>결과 보기</button>'))+'</div></div>'
+      +'</section>');
+
+    var $opts=card.querySelector('#options'); var groupName='q_'+state.step;
+    cur.options.forEach(function(opt,i){
+      var id=groupName+'_opt'+i; var isPicked = picked===opt.key;
+      var item=h('<div>'
+        +'<input type="radio" id="'+id+'" name="'+groupName+'" value="'+esc(opt.key)+'" '+(isPicked?'checked':'')+' style="position:absolute;left:-9999px">'
+        +'<label for="'+id+'" class="opt'+(isPicked?' active':'')+'" role="radio" aria-checked="'+(isPicked?'true':'false')+'"><span class="opt-text">'+esc(opt.label)+'</span></label>'
+        +'</div>');
+      item.querySelector('input').addEventListener('change', function(){
+        state.answers[state.step]=opt.key;
+        var last=(state.step>=Q.length-1);
+        if(last){
+          if(canSubmit(state.answers)){ setTimeout(onSubmit, 120); } else { render(); }
+        }else{
+          setTimeout(function(){ state.step++; render(); }, 120);
+        }
+      });
+      $opts.appendChild(item);
+      var labelEl = item.querySelector('label');
+      labelEl.addEventListener('pointerdown', function(){ labelEl.classList.add('hovering'); });
+      ['pointerup','pointercancel','mouseleave'].forEach(function(ev){
+        labelEl.addEventListener(ev, function(){ labelEl.classList.remove('hovering'); });
+      });
+    });
+
+    var prevBtn = card.querySelector('#prev');
+    if(prevBtn) prevBtn.addEventListener('click', function(){ if(state.step>0){ state.step--; render(); }});
+    var nextBtn = card.querySelector('#next');
+    if(nextBtn) nextBtn.addEventListener('click', function(){ if(state.answers[state.step]!=null){ state.step++; render(); }});
+    var submitBtn = card.querySelector('#submit');
+    if(submitBtn) submitBtn.addEventListener('click', onSubmit);
+
+    wrap.appendChild(card);
+
+    setTimeout(function(){
+      var legend=card.querySelector('#qlegend'); if(legend){ legend.setAttribute('tabindex','-1'); legend.focus(); }
+      var polite=$('#live-polite'); if(polite) polite.textContent='문항 '+(state.step+1)+' / '+Q.length;
+    },0);
+    return wrap;
+  }
+
+  function onSubmit(){
+    if(!canSubmit(state.answers)){ var idx=firstNull(state.answers); if(idx>=0){ state.step=idx; render(); } return; }
+    if(state.submitting) return;
+    state.submitting=true; render();
+    setTimeout(function(){
+      state.submitting=false;
+      state.showResult=true;
+      render();
+    }, 2000);
+  }
+
+  function pickCompatKeys(scores, answeredKeys){
+    var present = answeredKeys.filter(function(k){ return (scores[k]||0) > 0; });
+    var n = present.length;
+    if (n < 2) return { best: null, worst: null };
+    present.sort(function(a,b){ return (scores[b]||0) - (scores[a]||0); });
+    var maxScore = scores[present[0]] || 0;
+
+    var best = null;
+    for (var i = 1; i < n; i++){
+      if ((scores[present[i]] || 0) < maxScore){
+        best = present[i];
+        break;
+      }
+    }
+    var worst = null;
+    if (n >= 3){
+      var minScore = scores[present[n-1]] || 0;
+      if (minScore < maxScore) worst = present[n-1];
+    }
+    return { best: best, worst: worst };
+  }
+
+  function ResultView(){
+    var scores={}; Object.keys(AI_META).forEach(function(k){ scores[k]=0; });
+    state.answers.forEach(function(k){ scores[k]=(scores[k]||0)+1; });
+    var entries=Object.keys(scores).map(function(k){ return [k, scores[k]]; });
+
+    var max=0; entries.forEach(function(e){ if((e[1]||0)>max) max=e[1]||0; });
+    var winners=entries.filter(function(e){ return e[1]===max && max>0; }).map(function(e){ return e[0]; });
+    var totalAnswered=state.answers.length;
+
+    var title='';
+    if(winners.length===1){
+      var m0=AI_META[winners[0]]||{koName:winners[0]};
+      title = esc(state.name)+'님은 ‘'+esc(m0.koName)+'’ 유형!';
+    }else if(winners.length>=2){
+      title = esc(state.name)+'님은 복합적 ‘하이브리드’ 유형!';
+    }else{
+      title = esc(state.name)+'님의 결과';
+    }
+
+    var root=h('<section class="grid" style="gap:16px"></section>');
+    root.appendChild(
+      h('<div class="card p24">'
+        +'<h2 id="resultTitle" style="margin:0;font-size:22px;font-weight:800" role="status">'+title+'</h2>'
+        +'<p class="muted" style="margin:6px 0 0">총 '+totalAnswered+'문항 중 가장 높은 점수는 '+max+'점입니다.</p>'
+        +'</div>')
+    );
+
+    winners.forEach(function(k){ root.appendChild(ResultCard(k)); });
+
+    var answeredKeys=[]; state.answers.forEach(function(k){ if(answeredKeys.indexOf(k)===-1) answeredKeys.push(k); });
+    if(answeredKeys.length){
+      var dist=h('<div class="card p24"><h3 style="margin:0 0 8px;font-size:16px;font-weight:700">점수 분포</h3><div class="grid" style="gap:10px" id="bars"></div></div>');
+      var $bars=dist.querySelector('#bars');
+      var mx=1; answeredKeys.forEach(function(k){ if((scores[k]||0)>mx) mx=scores[k]||0; });
+      answeredKeys.sort(function(a,b){ return (scores[b]||0)-(scores[a]||0); }).forEach(function(k){
+        var m=AI_META[k]||{koName:k}; var pct=Math.round((scores[k]/mx)*100);
+        $bars.appendChild(
+          h('<div class="score-bar">'
+            +'<div class="score-label"><span class="muted score-name">'+esc(m.koName)+'</span><span class="score-value">'+scores[k]+'점</span></div>'
+            +'<div class="progress"><div style="width:'+pct+'%;background:#6E8C9E"></div></div>'
+            +'</div>')
+        );
+      });
+      root.appendChild(dist);
+    }
+
+    var compat = pickCompatKeys(scores, answeredKeys);
+    if (compat.best || compat.worst){
+      var wrap = h('<div class="card p24"><div class="compat"></div></div>');
+      var box  = wrap.querySelector('.compat');
+
+      /* 왼쪽: 잘 맞는 AI */
+      var left = h('<div class="item left"></div>');
+      var mB = compat.best ? (AI_META[compat.best]||{koName:compat.best}) : null;
+      if (mB){
+        var itL = h('<div class="slot"><span class="tag">잘 맞는 AI</span><div class="img"></div><div class="name">'+esc(mB.koName)+'</div></div>');
+        itL.querySelector('.img').appendChild(BrandImg(compat.best, 96, 'blue'));
+        left.appendChild(itL);
+      }
+      box.appendChild(left);
+
+      /* 오른쪽: 안 맞는 AI */
+      var right = h('<div class="item right"></div>');
+      var mW = compat.worst ? (AI_META[compat.worst]||{koName:compat.worst}) : null;
+      if (mW){
+        var itR = h('<div class="slot"><span class="tag">안 맞는 AI</span><div class="img"></div><div class="name">'+esc(mW.koName)+'</div></div>');
+        itR.querySelector('.img').appendChild(BrandImg(compat.worst, 96, 'red'));
+        right.appendChild(itR);
+      }
+      box.appendChild(right);
+
+      /* 점수 비율 계산: 좌(BEST)=pb, 우(WORST)=pr */
+      var sBest  = mB ? (scores[compat.best]  || 0) : 0;
+      var sWorst = mW ? (scores[compat.worst] || 0) : 0;
+      var pb=0, pr=0;
+      if (mB && mW){
+        var sum = sBest + sWorst;
+        if (sum > 0){ pb = Math.round((sBest / sum) * 100); pr = 100 - pb; }
+        else { pb = 50; pr = 50; }
+      } else if (mB && !mW){ pb = 100; pr = 0; }
+      else if (!mB && mW){ pb = 0;   pr = 100; }
+
+      /* 가운데 막대(좌=파랑 BEST, 우=빨강 WORST) + 간격 3px은 CSS margin으로 */
+      var mid = h('<div class="item mid" style="width:100%"></div>');
+      var meterWrap = h('<div class="compat-meter"></div>');
+      var meter = h('<div class="meter" role="img" aria-label="잘 맞음 '+pb+'%, 안 맞음 '+pr+'%, 합계 100%"></div>');
+
+      meter.appendChild(h('<div class="left"  style="width:'+pb+'%"></div>'));
+      meter.appendChild(h('<div class="right" style="width:'+pr+'%"></div>'));
+
+      /* 백분율 라벨도 좌=BEST, 우=WORST */
+      var overlay = h(
+        '<div style="position:absolute;inset:0;display:grid;grid-template-columns:'+pb+'% '+pr+'%;pointer-events:none;">'
+        +  '<div style="display:flex;align-items:center;justify-content:flex-start;height:100%;padding:0 0 0 10px;font-size:12px;font-weight:800;color:#fff;letter-spacing:.02em;text-shadow:0 1px 2px rgba(0,0,0,.35);white-space:nowrap;">'
+        +      (pb>=6 ? (pb+'%') : '')
+        +  '</div>'
+        +  '<div style="display:flex;align-items:center;justify-content:flex-end;height:100%;padding:0 10px 0 0;font-size:12px;font-weight:800;color:#fff;letter-spacing:.02em;text-shadow:0 1px 2px rgba(0,0,0,.35);white-space:nowrap;">'
+        +      (pr>=6 ? (pr+'%') : '')
+        +  '</div>'
+        +'</div>'
+      );
+      meter.appendChild(overlay);
+
+      meterWrap.appendChild(meter);
+      mid.appendChild(meterWrap);
+      /* 가운데를 DOM상 가운데에 넣기 위해 왼쪽 뒤에 삽입 */
+      box.insertBefore(mid, right);
+
+      root.appendChild(wrap);
+    }
+
+    var shareText = title.replace(/<[^>]+>/g,'');
+    root.appendChild(ShareRow(shareText));
+
+    var actions=h('<div class="row" style="justify-content:space-between"><button class="btn" id="review">문항 다시 보기</button><button class="btn primary" id="retry">다시 시작</button></div>');
+    actions.querySelector('#review').addEventListener('click', function(){ state.showResult=false; state.step=0; render(); });
+    actions.querySelector('#retry').addEventListener('click', function(){ state.started=false; state.name=''; state.age=null; state.step=0; state.answers=Array(QR.length).fill(null); state.showResult=false; render(); });
+    root.appendChild(actions);
+
+    return root;
+  }
+
+  /* ========= 7) 렌더/부팅 ========= */
+  function render(){
+    $('#year').textContent = new Date().getFullYear();
+    if (state.booting) { mount(Spinner('시트에서 문항을 불러오는 중…')); return; }
+    if (state.error)   { mount(ErrorCard(state.error)); return; }
+    if (state.submitting){ mount(LoadingScreen()); return; }
+    if (!state.started){ mount(StartScreen()); return; }
+    if (state.showResult){ mount(ResultView()); return; }
+    mount(QuizScreen());
+  }
+
+  async function boot(force){
+    if(force===void 0) force=false;
+    try{
+      state.booting=true; state.error=''; render();
+      var res = await new Promise(function(resolve,reject){
+        try{
+          if (typeof google!=='undefined' && google.script && google.script.run && !force) {
+            google.script.run.withSuccessHandler(resolve).withFailureHandler(reject)
+              .getMetaAndQuestions(SHEET_ID, TABS.META, TABS.Q);
+          } else { reject(new Error('Apps Script 런타임 아님 또는 서버함수 미구현')); }
+        }catch(e){ reject(e); }
+      }).catch(function(){ return null; });
+
+      if (res && res.metaRows && res.qRows) {
+        var metaRows = res.metaRows, qRows = res.qRows;
+        var parsed = parseMetaRows(metaRows); AI_META=parsed.meta; BRAND_COLORS=parsed.colors;
+        var aliases=buildAliases(AI_META); QR=parseQuestionRows(qRows, aliases);
+        state.answers = Array(QR.length).fill(null);
+        state.booting=false; render(); return;
+      }
+
+      var metaRows2 = await fetchSheetTab(TABS.META);
+      var qRows2    = await fetchSheetTab(TABS.Q);
+      var parsed2 = parseMetaRows(metaRows2); AI_META=parsed2.meta; BRAND_COLORS=parsed2.colors;
+      var aliases2 = buildAliases(AI_META); QR = parseQuestionRows(qRows2, aliases2);
+      state.answers = Array(QR.length).fill(null);
+      state.booting=false; render();
+    }catch(e){
+      console.error('[Load Error]', e);
+      state.booting=false;
+      state.error = ((e && e.message) ? e.message : String(e)) + ' — 확인: (1) 권한, (2) 탭 이름(AI_META/QUESTIONS), (3) 시트 ID.';
+      render();
+    }
+  }
+  boot();
+  </script>
+</body>
+</html>
